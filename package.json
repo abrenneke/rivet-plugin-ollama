@@ -1,0 +1,34 @@
+{
+  "name": "rivet-plugin-example",
+  "packageManager": "yarn@3.5.0",
+  "version": "0.0.3",
+  "type": "module",
+  "main": "dist/bundle.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b && tsx bundle.ts",
+    "dev": "run-p watch:tsc watch:esbuild:sync",
+    "watch:tsc": "tsc -b -w --preserveWatchOutput",
+    "watch:esbuild": "tsx bundle.ts --watch",
+    "watch:esbuild:sync": "tsx bundle.ts --watch --sync",
+    "publish": "yarn npm publish --access public"
+  },
+  "dependencies": {
+    "@ironclad/rivet-core": "^1.4.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.19.2",
+    "npm-run-all": "^4.1.5",
+    "recursive-copy": "^2.0.14",
+    "tsx": "^3.12.10",
+    "typescript": "^5.2.2"
+  },
+  "volta": {
+    "node": "20.6.1"
+  },
+  "rivet": {
+    "skipInstall": true
+  }
+}
