@@ -70,7 +70,7 @@ To use this plugin in Rivet:
 
    ```ts
    import * as Rivet from "@ironclad/rivet-node";
-   import RivetPluginOllama from "@ironclad/rivet-plugin-ollama";
+   import RivetPluginOllama from "rivet-plugin-ollama";
    ```
 
 2. Initialize the plugin and register the nodes with the `globalRivetNodeRegistry`:
