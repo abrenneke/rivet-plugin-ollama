@@ -18,38 +18,38 @@ The Rivet Ollama Plugin is a plugin for [Rivet](https://rivet.ironcladapp.com) t
 
 **Table of Contents**
 
-* [Running Ollama](#running-ollama)
-* [Using the plugin](#using-the-plugin)
-  * [In Rivet](#in-rivet)
-  * [In the SDK](#in-the-sdk)
-* [Configuration](#configuration)
-  * [In Rivet](#in-rivet-1)
-  * [In the SDK](#in-the-sdk-1)
-* [Nodes](#nodes)
-  * [Ollama Chat](#ollama-chat)
-    * [Inputs](#inputs)
-    * [Outputs](#outputs)
-    * [Editor Settings](#editor-settings)
-  * [List Ollama Models](#list-ollama-models)
-    * [Inputs](#inputs-1)
-    * [Outputs](#outputs-1)
-    * [Editor Settings](#editor-settings-1)
-  * [Get Ollama Model](#get-ollama-model)
-    * [Inputs](#inputs-2)
-    * [Outputs](#outputs-2)
-    * [Editor Settings](#editor-settings-2)
-  * [Pull Model to Ollama](#pull-model-to-ollama)
-    * [Inputs](#inputs-3)
-    * [Outputs](#outputs-3)
-    * [Editor Settings](#editor-settings-3)
-* [Local Development](#local-development)
+- [Running Ollama](#running-ollama)
+- [Using the plugin](#using-the-plugin)
+  - [In Rivet](#in-rivet)
+  - [In the SDK](#in-the-sdk)
+- [Configuration](#configuration)
+  - [In Rivet](#in-rivet-1)
+  - [In the SDK](#in-the-sdk-1)
+- [Nodes](#nodes)
+  - [Ollama Chat](#ollama-chat)
+    - [Inputs](#inputs)
+    - [Outputs](#outputs)
+    - [Editor Settings](#editor-settings)
+  - [List Ollama Models](#list-ollama-models)
+    - [Inputs](#inputs-1)
+    - [Outputs](#outputs-1)
+    - [Editor Settings](#editor-settings-1)
+  - [Get Ollama Model](#get-ollama-model)
+    - [Inputs](#inputs-2)
+    - [Outputs](#outputs-2)
+    - [Editor Settings](#editor-settings-2)
+  - [Pull Model to Ollama](#pull-model-to-ollama)
+    - [Inputs](#inputs-3)
+    - [Outputs](#outputs-3)
+    - [Editor Settings](#editor-settings-3)
+- [Local Development](#local-development)
 
 ## Running Ollama
 
 To run Ollama so that Rivet's default [browser executor](https://rivet.ironcladapp.com/docs/user-guide/executors#browser) can communicate with it, you will want to start it with the following command:
 
 ```bash
-OLLAMA_ORIGINS=tauri://localhost ollama serve
+OLLAMA_ORIGINS=* ollama serve
 ```
 
 If you are using the [node executor](https://rivet.ironcladapp.com/docs/user-guide/executors#node), you can omit the `OLLAMA_ORIGINS` environment variable.

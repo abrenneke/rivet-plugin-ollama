@@ -310,7 +310,7 @@ var ollamaChat = (rivet) => {
       if (data.useStopInput) {
         inputs.push({
           id: "stop",
-          dataType: "string",
+          dataType: "string[]",
           title: "Stop",
           description: 'The "stop" parameter.'
         });
@@ -661,6 +661,15 @@ var ollamaChat = (rivet) => {
           "object"
         ) ?? {};
       }
+      let stop = void 0;
+      if (data.useStopInput) {
+        stop = rivet.coerceTypeOptional(
+          inputData["stop"],
+          "string[]"
+        );
+      } else {
+        stop = data.stop ? [data.stop] : void 0;
+      }
       const parameters = {
         mirostat: rivet.getInputOrData(data, inputData, "mirostat", "number"),
         mirostat_eta: rivet.getInputOrData(
@@ -703,7 +712,7 @@ var ollamaChat = (rivet) => {
           "number"
         ),
         seed: rivet.getInputOrData(data, inputData, "seed", "number"),
-        stop: rivet.getInputOrData(data, inputData, "stop", "string"),
+        stop,
         tfs_z: rivet.getInputOrData(data, inputData, "tfsZ", "number"),
         num_predict: rivet.getInputOrData(
           data,
@@ -884,7 +893,7 @@ function formatLlama2Instruct(messages) {
       prompt += formatChatMessage(message, "llama2");
     } else if (message.type === "assistant") {
       if (inInstruction) {
-        prompt += "[/INST] ";
+        prompt += " [/INST] ";
         inInstruction = false;
       }
       prompt += formatChatMessage(message, "llama2");
