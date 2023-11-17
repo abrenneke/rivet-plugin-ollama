@@ -69,7 +69,7 @@ To use this plugin in Rivet:
 1. Import the plugin and Rivet into your project:
 
    ```ts
-   import * as Rivet from "@ironclad/rivet";
+   import * as Rivet from "@ironclad/rivet-node";
    import RivetPluginOllama from "@ironclad/rivet-plugin-ollama";
    ```
 
@@ -100,7 +100,7 @@ await createProcessor(project, {
   ...etc,
   pluginSettings: {
     ollama: {
-      host: "http://localhost:8000",
+      host: "http://localhost:11434",
     },
   },
 });
