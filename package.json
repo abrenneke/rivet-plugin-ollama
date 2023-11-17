@@ -1,7 +1,7 @@
 {
-  "name": "rivet-plugin-example",
+  "name": "rivet-plugin-ollama",
   "packageManager": "yarn@3.5.0",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "type": "module",
   "main": "dist/bundle.js",
   "files": [
@@ -16,7 +16,8 @@
     "publish": "yarn npm publish --access public"
   },
   "dependencies": {
-    "@ironclad/rivet-core": "^1.4.0"
+    "@ironclad/rivet-core": "^1.13.2",
+    "ts-pattern": "^5.0.5"
   },
   "devDependencies": {
     "esbuild": "^0.19.2",
