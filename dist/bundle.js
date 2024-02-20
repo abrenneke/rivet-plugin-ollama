@@ -172,7 +172,7 @@ var $ = class _$ {
   }
 };
 
-// src/nodes/OllamaChatNode.ts
+// src/nodes/OllamaGenerateNode.ts
 var ollamaChat = (rivet) => {
   const impl = {
     create() {
@@ -187,7 +187,7 @@ var ollamaChat = (rivet) => {
           advancedOutputs: false,
           stop: ""
         },
-        title: "Ollama Chat",
+        title: "Ollama Generate",
         type: "ollamaChat",
         visualData: {
           x: 0,
@@ -632,10 +632,10 @@ var ollamaChat = (rivet) => {
     },
     getUIData() {
       return {
-        contextMenuTitle: "Ollama Chat",
+        contextMenuTitle: "Ollama Generate",
         group: "Ollama",
-        infoBoxBody: "This is an Ollama Chat node.",
-        infoBoxTitle: "Ollama Chat Node"
+        infoBoxBody: "This is an Ollama Generate node using /api/generate.",
+        infoBoxTitle: "Ollama Generate Node"
       };
     },
     async process(data, inputData, context) {
@@ -960,6 +960,240 @@ function chatMessageToString(messageParts) {
     }
   }).join("\n\n");
   return stringMessage;
+}
+
+// src/nodes/OllamaChatNode.ts
+var ollamaChat2 = (rivet) => {
+  const impl = {
+    create() {
+      const node = {
+        id: rivet.newId(),
+        data: {
+          model: "",
+          useModelInput: false,
+          promptFormat: "auto",
+          jsonMode: false,
+          outputFormat: "",
+          advancedOutputs: false,
+          stop: ""
+        },
+        title: "Ollama Chat",
+        type: "ollamaChat2",
+        visualData: {
+          x: 0,
+          y: 0,
+          width: 250
+        }
+      };
+      return node;
+    },
+    getInputDefinitions(data) {
+      const inputs = [];
+      inputs.push({
+        id: "system-prompt",
+        dataType: "string",
+        title: "System Prompt",
+        description: "The system prompt to prepend to the messages list.",
+        required: false,
+        coerced: true
+      });
+      inputs.push({
+        id: "messages",
+        dataType: ["chat-message[]", "chat-message"],
+        title: "Messages",
+        description: "The chat messages to use as the prompt."
+      });
+      if (data.useModelInput) {
+        inputs.push({
+          id: "model",
+          dataType: "string",
+          title: "Model"
+        });
+      }
+      return inputs;
+    },
+    getOutputDefinitions(data) {
+      let outputs = [
+        {
+          id: "output",
+          dataType: "string",
+          title: "Output",
+          description: "The output from Ollama."
+        },
+        {
+          id: "messages-sent",
+          dataType: "chat-message[]",
+          title: "Messages Sent",
+          description: "The messages sent to Ollama, including the system prompt."
+        },
+        {
+          id: "all-messages",
+          dataType: "chat-message[]",
+          title: "All Messages",
+          description: "All messages, including the reply from Ollama."
+        }
+      ];
+      return outputs;
+    },
+    getEditors() {
+      return [
+        {
+          type: "string",
+          dataKey: "model",
+          label: "Model",
+          useInputToggleDataKey: "useModelInput",
+          helperMessage: "The LLM model to use in Ollama."
+        },
+        {
+          type: "toggle",
+          dataKey: "jsonMode",
+          label: "JSON mode",
+          helperMessage: "Activates Ollamas JSON mode. Make sure to also instruct the model to return JSON"
+        }
+      ];
+    },
+    getBody(data) {
+      return rivet.dedent`
+        Model: ${data.useModelInput ? "(From Input)" : data.model || "Unset!"}
+        JSON Mode: ${data.jsonMode || false}
+      `;
+    },
+    getUIData() {
+      return {
+        contextMenuTitle: "Ollama Chat",
+        group: "Ollama",
+        infoBoxBody: "This is an Ollama Chat node using /api/chat.",
+        infoBoxTitle: "Ollama Chat Node"
+      };
+    },
+    async process(data, inputData, context) {
+      let outputs = {};
+      const host = context.getPluginConfig("host") || "http://localhost:11434";
+      if (!host.trim()) {
+        throw new Error("No host set!");
+      }
+      const model = rivet.getInputOrData(data, inputData, "model", "string");
+      if (!model) {
+        throw new Error("No model set!");
+      }
+      const systemPrompt = rivet.coerceTypeOptional(
+        inputData["system-prompt"],
+        "string"
+      );
+      const chatMessages = rivet.coerceTypeOptional(
+        inputData["messages"],
+        "chat-message[]"
+      ) ?? [];
+      const allMessages = systemPrompt ? [{ type: "system", message: systemPrompt }, ...chatMessages] : chatMessages;
+      const inputMessages = allMessages.map((message) => {
+        if (typeof message.message === "string") {
+          return { type: message.type, message: message.message };
+        } else {
+          return { type: message.type, message: JSON.stringify(message.message) };
+        }
+      });
+      const openAiMessages = formatChatMessages2(inputMessages);
+      let apiResponse;
+      const requestBody = {
+        model,
+        messages: openAiMessages,
+        stream: true
+      };
+      if (data.jsonMode === true) {
+        requestBody.format = "json";
+      }
+      try {
+        apiResponse = await fetch(`${host}/api/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(requestBody)
+        });
+      } catch (err) {
+        throw new Error(`Error from Ollama: ${rivet.getError(err).message}`);
+      }
+      if (!apiResponse.ok) {
+        try {
+          const error = await apiResponse.json();
+          throw new Error(`Error from Ollama: ${error.message}`);
+        } catch (err) {
+          throw new Error(`Error from Ollama: ${apiResponse.statusText}`);
+        }
+      }
+      const reader = apiResponse.body?.getReader();
+      if (!reader) {
+        throw new Error("No response body!");
+      }
+      let streamingResponseText = "";
+      let llmResponseText = "";
+      let finalResponse;
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+        if (value) {
+          const chunk = new TextDecoder().decode(value);
+          streamingResponseText += chunk;
+          const lines = streamingResponseText.split("\n");
+          streamingResponseText = lines.pop() ?? "";
+          for (const line of lines) {
+            try {
+              const json = JSON.parse(line);
+              if (!("done" in json)) {
+                throw new Error(`Invalid response from Ollama: ${line}`);
+              }
+              if (!json.done) {
+                if (llmResponseText === "") {
+                  llmResponseText += json.message.content.trimStart();
+                } else {
+                  llmResponseText += json.message.content;
+                }
+              } else {
+                finalResponse = json;
+              }
+            } catch (err) {
+              throw new Error(
+                `Error parsing line from Ollama streaming response: ${line}`
+              );
+            }
+          }
+          outputs["output"] = {
+            type: "string",
+            value: llmResponseText
+          };
+          context.onPartialOutputs?.(outputs);
+        }
+      }
+      if (!finalResponse) {
+        throw new Error("No final response from Ollama!");
+      }
+      outputs["messages-sent"] = {
+        type: "chat-message[]",
+        value: allMessages
+      };
+      outputs["all-messages"] = {
+        type: "chat-message[]",
+        value: [
+          ...allMessages,
+          {
+            type: "assistant",
+            message: llmResponseText,
+            function_call: void 0
+          }
+        ]
+      };
+      return outputs;
+    }
+  };
+  return rivet.pluginNodeDefinition(impl, "Ollama Chat");
+};
+function formatChatMessages2(messages) {
+  return messages.map((message) => ({
+    role: message.type,
+    content: message.message
+  }));
 }
 
 // src/nodes/GetOllamaModelNode.ts
@@ -1321,6 +1555,7 @@ var plugin = (rivet) => {
     ],
     register: (register) => {
       register(ollamaChat(rivet));
+      register(ollamaChat2(rivet));
       register(getOllamaModel(rivet));
       register(listOllamaModels(rivet));
       register(pullModelToOllama(rivet));
