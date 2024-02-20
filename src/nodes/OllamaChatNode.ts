@@ -20,6 +20,8 @@ export type OllamaChatNodeData = {
 
   promptFormat: string;
 
+  jsonMode: boolean;
+
   outputFormat: string;
 
   advancedOutputs: boolean;
@@ -115,7 +117,8 @@ export const ollamaChat = (rivet: typeof Rivet) => {
         data: {
           model: "",
           useModelInput: false,
-          promptFormat: "llama2",
+          promptFormat: "auto",
+          jsonMode: false,
           outputFormat: "",
           advancedOutputs: false,
           stop: "",
@@ -418,12 +421,18 @@ export const ollamaChat = (rivet: typeof Rivet) => {
           dataKey: "promptFormat",
           label: "Prompt Format",
           options: [
+            { value: "auto", label: "Auto"},
             { value: "", label: "Raw" },
             { value: "llama2", label: "Llama 2 Instruct" },
           ],
           defaultValue: "",
-          helperMessage:
-            "The way to format chat messages for the prompt being sent to the ollama model. Raw means no formatting is applied.",
+          helperMessage: "The way to format chat messages for the prompt being sent to the ollama model. Raw means no formatting is applied. Auto means ollama will take care of it."
+        },
+        {
+          type: "toggle",
+          dataKey: "jsonMode",
+          label: "JSON mode",
+          helperMessage: "Activates Ollamas JSON mode. Make sure to also instruct the model to return JSON"
         },
         {
           type: "toggle",
@@ -724,20 +733,34 @@ export const ollamaChat = (rivet: typeof Rivet) => {
       };
 
       let apiResponse: Response;
+      
+      type RequestBodyType = {
+        model: string;
+        prompt: string;
+        raw: boolean;
+        stream: boolean;
+        options: any;
+        format?: string;
+      };
+
+      const requestBody: RequestBodyType = {
+        model,
+        prompt,
+        raw: data.promptFormat === "auto" ? false : true,
+        stream: true,
+        options: parameters
+      };
+      if (data.jsonMode === true) {
+        requestBody.format = "json";
+      } // test
+      
       try {
         apiResponse = await fetch(`${host}/api/generate`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            model,
-            prompt,
-            format: data.outputFormat || undefined,
-            raw: true,
-            stream: true,
-            options: parameters,
-          }),
+          body: JSON.stringify(requestBody)
         });
       } catch (err) {
         throw new Error(`Error from Ollama: ${rivet.getError(err).message}`);
@@ -901,6 +924,11 @@ function formatChatMessages(messages: ChatMessage[], format: string): string {
       "",
       () =>
         messages.map((message) => formatChatMessage(message, format)).join("\n") // Hopefully \n is okay? Instead of joining with empty string?
+    )
+    .with(
+      "auto",
+      () =>
+        messages.map((message) => formatChatMessage(message, format)).join("\n")
     )
     .with("llama2", () => formatLlama2Instruct(messages))
     .otherwise(() => {
