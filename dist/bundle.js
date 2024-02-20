@@ -181,7 +181,8 @@ var ollamaChat = (rivet) => {
         data: {
           model: "",
           useModelInput: false,
-          promptFormat: "llama2",
+          promptFormat: "auto",
+          jsonMode: false,
           outputFormat: "",
           advancedOutputs: false,
           stop: ""
@@ -457,11 +458,18 @@ var ollamaChat = (rivet) => {
           dataKey: "promptFormat",
           label: "Prompt Format",
           options: [
+            { value: "auto", label: "Auto" },
             { value: "", label: "Raw" },
             { value: "llama2", label: "Llama 2 Instruct" }
           ],
           defaultValue: "",
-          helperMessage: "The way to format chat messages for the prompt being sent to the ollama model. Raw means no formatting is applied."
+          helperMessage: "The way to format chat messages for the prompt being sent to the ollama model. Raw means no formatting is applied. Auto means ollama will take care of it."
+        },
+        {
+          type: "toggle",
+          dataKey: "jsonMode",
+          label: "JSON mode",
+          helperMessage: "Activates Ollamas JSON mode. Make sure to also instruct the model to return JSON"
         },
         {
           type: "toggle",
@@ -725,20 +733,23 @@ var ollamaChat = (rivet) => {
         ...additionalParameters
       };
       let apiResponse;
+      const requestBody = {
+        model,
+        prompt,
+        raw: data.promptFormat === "auto" ? false : true,
+        stream: true,
+        options: parameters
+      };
+      if (data.jsonMode === true) {
+        requestBody.format = "json";
+      }
       try {
         apiResponse = await fetch(`${host}/api/generate`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({
-            model,
-            prompt,
-            format: data.outputFormat || void 0,
-            raw: true,
-            stream: true,
-            options: parameters
-          })
+          body: JSON.stringify(requestBody)
         });
       } catch (err) {
         throw new Error(`Error from Ollama: ${rivet.getError(err).message}`);
@@ -870,6 +881,9 @@ function formatChatMessages(messages, format) {
     "",
     () => messages.map((message) => formatChatMessage(message, format)).join("\n")
     // Hopefully \n is okay? Instead of joining with empty string?
+  ).with(
+    "auto",
+    () => messages.map((message) => formatChatMessage(message, format)).join("\n")
   ).with("llama2", () => formatLlama2Instruct(messages)).otherwise(() => {
     throw new Error(`Unsupported format: ${format}`);
   });
