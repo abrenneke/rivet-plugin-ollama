@@ -164,6 +164,150 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
         });
       }
 
+      if (data.useMirostatInput) {
+        inputs.push({
+          id: "mirostat" as PortId,
+          dataType: "number",
+          title: "Mirostat",
+          description: 'The "mirostat" parameter.',
+        });
+      }
+
+      if (data.useMirostatEtaInput) {
+        inputs.push({
+          id: "mirostatEta" as PortId,
+          dataType: "number",
+          title: "Mirostat Eta",
+          description: 'The "mirostat_eta" parameter.',
+        });
+      }
+
+      if (data.useMirostatTauInput) {
+        inputs.push({
+          id: "mirostatTau" as PortId,
+          dataType: "number",
+          title: "Mirostat Tau",
+          description: 'The "mirostat_tau" parameter.',
+        });
+      }
+
+      if (data.useNumCtxInput) {
+        inputs.push({
+          id: "numCtx" as PortId,
+          dataType: "number",
+          title: "Num Ctx",
+          description: 'The "num_ctx" parameter.',
+        });
+      }
+
+      if (data.useNumGqaInput) {
+        inputs.push({
+          id: "numGqa" as PortId,
+          dataType: "number",
+          title: "Num GQA",
+          description: 'The "num_gqa" parameter.',
+        });
+      }
+
+      if (data.useNumGpuInput) {
+        inputs.push({
+          id: "numGpu" as PortId,
+          dataType: "number",
+          title: "Num GPUs",
+          description: 'The "num_gpu" parameter.',
+        });
+      }
+
+      if (data.useNumThreadInput) {
+        inputs.push({
+          id: "numThread" as PortId,
+          dataType: "number",
+          title: "Num Threads",
+          description: 'The "num_thread" parameter.',
+        });
+      }
+
+      if (data.useRepeatLastNInput) {
+        inputs.push({
+          id: "repeatLastN" as PortId,
+          dataType: "number",
+          title: "Repeat Last N",
+          description: 'The "repeat_last_n" parameter.',
+        });
+      }
+
+      if (data.useRepeatPenaltyInput) {
+        inputs.push({
+          id: "repeatPenalty" as PortId,
+          dataType: "number",
+          title: "Repeat Penalty",
+          description: 'The "repeat_penalty" parameter.',
+        });
+      }
+
+      if (data.useTemperatureInput) {
+        inputs.push({
+          id: "temperature" as PortId,
+          dataType: "number",
+          title: "Temperature",
+          description: 'The "temperature" parameter.',
+        });
+      }
+
+      if (data.useSeedInput) {
+        inputs.push({
+          id: "seed" as PortId,
+          dataType: "number",
+          title: "Seed",
+          description: 'The "seed" parameter.',
+        });
+      }
+
+      if (data.useStopInput) {
+        inputs.push({
+          id: "stop" as PortId,
+          dataType: "string[]",
+          title: "Stop",
+          description: 'The "stop" parameter.',
+        });
+      }
+
+      if (data.useTfsZInput) {
+        inputs.push({
+          id: "tfsZ" as PortId,
+          dataType: "number",
+          title: "TFS Z",
+          description: 'The "tfs_z" parameter.',
+        });
+      }
+
+      if (data.useNumPredictInput) {
+        inputs.push({
+          id: "numPredict" as PortId,
+          dataType: "number",
+          title: "Num Predict",
+          description: 'The "num_predict" parameter.',
+        });
+      }
+
+      if (data.useTopKInput) {
+        inputs.push({
+          id: "topK" as PortId,
+          dataType: "number",
+          title: "Top K",
+          description: 'The "top_k" parameter.',
+        });
+      }
+
+      if (data.useTopPInput) {
+        inputs.push({
+          id: "topP" as PortId,
+          dataType: "number",
+          title: "Top P",
+          description: 'The "top_p" parameter.',
+        });
+      }
+
       return inputs;
     },
 
@@ -208,6 +352,168 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
           label: "JSON mode",
           helperMessage: "Activates Ollamas JSON mode. Make sure to also instruct the model to return JSON"
         },
+        {
+          type: "group",
+          label: "Parameters",
+          editors: [
+            {
+              type: "number",
+              dataKey: "mirostat",
+              useInputToggleDataKey: "useMirostatInput",
+              label: "Mirostat",
+              helperMessage:
+                "Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0)",
+              min: 0,
+              max: 1,
+              step: 1,
+              allowEmpty: true,
+            },
+            {
+              type: "number",
+              dataKey: "mirostatEta",
+              useInputToggleDataKey: "useMirostatEtaInput",
+              label: "Mirostat Eta",
+              helperMessage:
+                "Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. (Default: 0.1)",
+              allowEmpty: true,
+            },
+            {
+              type: "number",
+              dataKey: "mirostatTau",
+              useInputToggleDataKey: "useMirostatTauInput",
+              label: "Mirostat Tau",
+              helperMessage:
+                "Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. (Default: 5.0)",
+              allowEmpty: true,
+            },
+            {
+              type: "number",
+              dataKey: "numCtx",
+              useInputToggleDataKey: "useNumCtxInput",
+              label: "Num Ctx",
+              helperMessage:
+                "Sets the size of the context window used to generate the next token. (Default: 2048)",
+
+              allowEmpty: true,
+            },
+            {
+              type: "number",
+              dataKey: "numGqa",
+              useInputToggleDataKey: "useNumGqaInput",
+              label: "Num GQA",
+              helperMessage:
+                "The number of GQA groups in the transformer layer. Required for some models, for example it is 8 for llama2:70b",
+              allowEmpty: true,
+            },
+            {
+              type: "number",
+              dataKey: "numGpu",
+              useInputToggleDataKey: "useNumGpuInput",
+              label: "Num GPUs",
+              helperMessage:
+                "The number of layers to send to the GPU(s). On macOS it defaults to 1 to enable metal support, 0 to disable.",
+              allowEmpty: true,
+            },
+            {
+              type: "number",
+              dataKey: "numThread",
+              useInputToggleDataKey: "useNumThreadInput",
+              label: "Num Threads",
+              helperMessage:
+                "Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores).",
+              allowEmpty: true,
+            },
+            {
+              type: "number",
+              dataKey: "repeatLastN",
+              useInputToggleDataKey: "useRepeatLastNInput",
+              label: "Repeat Last N",
+              helperMessage:
+                "Sets how far back for the model to look back to prevent repetition. (Default: 64, 0 = disabled, -1 = num_ctx)",
+              allowEmpty: true,
+            },
+            {
+              type: "number",
+              dataKey: "repeatPenalty",
+              useInputToggleDataKey: "useRepeatPenaltyInput",
+              label: "Repeat Penalty",
+              helperMessage:
+                "Sets how strongly to penalize repetitions. A higher value (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g., 0.9) will be more lenient. (Default: 1.1)",
+              allowEmpty: true,
+            },
+            {
+              type: "number",
+              dataKey: "temperature",
+              useInputToggleDataKey: "useTemperatureInput",
+              label: "Temperature",
+              helperMessage:
+                "The temperature of the model. Increasing the temperature will make the model answer more creatively. (Default: 0.8)",
+              allowEmpty: true,
+            },
+            {
+              type: "number",
+              dataKey: "seed",
+              useInputToggleDataKey: "useSeedInput",
+              label: "Seed",
+              helperMessage:
+                "Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt. (Default: 0)",
+              allowEmpty: true,
+            },
+            {
+              type: "string",
+              dataKey: "stop",
+              useInputToggleDataKey: "useStopInput",
+              label: "Stop",
+              helperMessage:
+                "Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return.",
+            },
+            {
+              type: "number",
+              dataKey: "tfsZ",
+              useInputToggleDataKey: "useTfsZInput",
+              label: "TFS Z",
+              helperMessage:
+                "Tail free sampling is used to reduce the impact of less probable tokens from the output. A higher value (e.g., 2.0) will reduce the impact more, while a value of 1.0 disables this setting. (default: 1)",
+              allowEmpty: true,
+            },
+            {
+              type: "number",
+              dataKey: "numPredict",
+              useInputToggleDataKey: "useNumPredictInput",
+              label: "Num Predict",
+              helperMessage:
+                "Maximum number of tokens to predict when generating text. (Default: 128, -1 = infinite generation, -2 = fill context)",
+              allowEmpty: true,
+            },
+            {
+              type: "number",
+              dataKey: "topK",
+              useInputToggleDataKey: "useTopKInput",
+              label: "Top K",
+              helperMessage:
+                "Reduces the probability of generating nonsense. A higher value (e.g. 100) will give more diverse answers, while a lower value (e.g. 10) will be more conservative. (Default: 40)",
+              allowEmpty: true,
+            },
+            {
+              type: "number",
+              dataKey: "topP",
+              useInputToggleDataKey: "useTopPInput",
+              label: "Top P",
+              helperMessage:
+                "Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text. (Default: 0.9)",
+              allowEmpty: true,
+            },
+            {
+              type: "keyValuePair",
+              dataKey: "additionalParameters",
+              useInputToggleDataKey: "useAdditionalParametersInput",
+              label: "Additional Parameters",
+              keyPlaceholder: "Parameter",
+              valuePlaceholder: "Value",
+              helperMessage:
+                "Additional parameters to pass to Ollama. Numbers will be parsed and sent as numbers, otherwise they will be sent as strings.",
+            },
+      ]}
       ];
     },
 
@@ -262,7 +568,88 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
             return { type: message.type, message: JSON.stringify(message.message) };
           }
         }); 
+      
+        let additionalParameters: Record<string, string | number> = (
+          data.additionalParameters ?? []
+        ).reduce((acc, { key, value }) => {
+          const parsedValue = Number(value);
+          acc[key] = isNaN(parsedValue) ? value : parsedValue;
+          return acc;
+        }, {} as Record<string, string | number>);
+  
+        if (data.useAdditionalParametersInput) {
+          additionalParameters = (rivet.coerceTypeOptional(
+            inputData["additionalParameters" as PortId],
+            "object"
+          ) ?? {}) as Record<string, string | number>;
+        }
+
+        let stop: string[] | undefined = undefined;
+        if (data.useStopInput) {
+          stop = rivet.coerceTypeOptional(
+            inputData["stop" as PortId],
+            "string[]"
+          );
+        } else {
+          stop = data.stop ? [data.stop] : undefined;
+        }
+
       const openAiMessages = formatChatMessages(inputMessages);
+
+      const parameters = {
+        mirostat: rivet.getInputOrData(data, inputData, "mirostat", "number"),
+        mirostat_eta: rivet.getInputOrData(
+          data,
+          inputData,
+          "mirostatEta",
+          "number"
+        ),
+        mirostat_tau: rivet.getInputOrData(
+          data,
+          inputData,
+          "mirostatTau",
+          "number"
+        ),
+        num_ctx: rivet.getInputOrData(data, inputData, "numCtx", "number"),
+        num_gqa: rivet.getInputOrData(data, inputData, "numGqa", "number"),
+        num_gpu: rivet.getInputOrData(data, inputData, "numGpu", "number"),
+        num_thread: rivet.getInputOrData(
+          data,
+          inputData,
+          "numThread",
+          "number"
+        ),
+        repeat_last_n: rivet.getInputOrData(
+          data,
+          inputData,
+          "repeatLastN",
+          "number"
+        ),
+        repeat_penalty: rivet.getInputOrData(
+          data,
+          inputData,
+          "repeatPenalty",
+          "number"
+        ),
+        temperature: rivet.getInputOrData(
+          data,
+          inputData,
+          "temperature",
+          "number"
+        ),
+        seed: rivet.getInputOrData(data, inputData, "seed", "number"),
+        stop,
+        tfs_z: rivet.getInputOrData(data, inputData, "tfsZ", "number"),
+        num_predict: rivet.getInputOrData(
+          data,
+          inputData,
+          "numPredict",
+          "number"
+        ),
+        top_k: rivet.getInputOrData(data, inputData, "topK", "number"),
+        top_p: rivet.getInputOrData(data, inputData, "topP", "number"),
+        ...additionalParameters,
+      };
 
       let apiResponse: Response;
       
@@ -270,13 +657,15 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
         model: string;
         messages: OutputMessage[];
         format?: string;
+        options: any;
         stream: boolean;
       };
 
       const requestBody: RequestBodyType = {
         model,
         messages: openAiMessages,
-        stream: true
+        stream: true,
+        options: parameters
       };
       
       if (data.jsonMode === true) {
