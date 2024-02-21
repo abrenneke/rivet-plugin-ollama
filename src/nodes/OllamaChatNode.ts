@@ -1,7 +1,6 @@
 import type {
   ChartNode,
   ChatMessage,
-  ChatMessageMessagePart,
   EditorDefinition,
   NodeId,
   NodeInputDefinition,
@@ -18,13 +17,15 @@ export type OllamaChatNodeData = {
   model: string;
   useModelInput?: boolean;
 
-  promptFormat: string;
-
   jsonMode: boolean;
 
-  outputFormat: string;
-
   advancedOutputs: boolean;
+
+  numPredict?: number;
+  useNumPredictInput?: boolean;
+
+  temperature?: number;
+  useTemperatureInput?: boolean;
 
   // PARAMETERS
 
@@ -55,9 +56,6 @@ export type OllamaChatNodeData = {
   repeatPenalty?: number;
   useRepeatPenaltyInput?: boolean;
 
-  temperature?: number;
-  useTemperatureInput?: boolean;
-
   seed?: number;
   useSeedInput?: boolean;
 
@@ -66,9 +64,6 @@ export type OllamaChatNodeData = {
 
   tfsZ?: number;
   useTfsZInput?: boolean;
-
-  numPredict?: number;
-  useNumPredictInput?: boolean;
 
   topK?: number;
   useTopKInput?: boolean;
@@ -120,9 +115,8 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
         data: {
           model: "",
           useModelInput: false,
-          promptFormat: "auto",
+          numPredict: 1024,
           jsonMode: false,
-          outputFormat: "",
           advancedOutputs: false,
           stop: "",
         },
@@ -353,6 +347,25 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
           helperMessage: "Activates Ollamas JSON mode. Make sure to also instruct the model to return JSON"
         },
         {
+          type: "number",
+          dataKey: "numPredict",
+          useInputToggleDataKey: "useNumPredictInput",
+          label: "maxTokens (num Predict)",
+          helperMessage:
+            "The maximum number of tokens to generate in the chat completion.",
+          allowEmpty: false,
+          defaultValue: 1024,
+        },
+        {
+          type: "number",
+          dataKey: "temperature",
+          useInputToggleDataKey: "useTemperatureInput",
+          label: "Temperature",
+          helperMessage:
+            "The temperature of the model. Increasing the temperature will make the model answer more creatively. (Default: 0.8)",
+          allowEmpty: true,
+        },
+        {
           type: "group",
           label: "Parameters",
           editors: [
@@ -443,15 +456,6 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
             },
             {
               type: "number",
-              dataKey: "temperature",
-              useInputToggleDataKey: "useTemperatureInput",
-              label: "Temperature",
-              helperMessage:
-                "The temperature of the model. Increasing the temperature will make the model answer more creatively. (Default: 0.8)",
-              allowEmpty: true,
-            },
-            {
-              type: "number",
               dataKey: "seed",
               useInputToggleDataKey: "useSeedInput",
               label: "Seed",
@@ -520,6 +524,7 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
     getBody(data) {
       return rivet.dedent`
         Model: ${data.useModelInput ? "(From Input)" : data.model || "Unset!"}
+        Max tokens: ${data.numPredict || 1024}
         JSON Mode: ${data.jsonMode || false}
       `;
     },

@@ -120,6 +120,7 @@ export const ollamaChat = (rivet: typeof Rivet) => {
           promptFormat: "auto",
           jsonMode: false,
           outputFormat: "",
+          numPredict: 1024,
           advancedOutputs: false,
           stop: "",
         },
@@ -435,6 +436,16 @@ export const ollamaChat = (rivet: typeof Rivet) => {
           helperMessage: "Activates Ollamas JSON mode. Make sure to also instruct the model to return JSON"
         },
         {
+          type: "number",
+          dataKey: "numPredict",
+          useInputToggleDataKey: "useNumPredictInput",
+          label: "maxTokens (num Predict)",
+          helperMessage:
+            "The maximum number of tokens to generate in the chat completion.",
+          allowEmpty: false,
+          defaultValue: 1024,
+        },
+        {
           type: "toggle",
           dataKey: "advancedOutputs",
           label: "Advanced Outputs",
@@ -611,6 +622,7 @@ export const ollamaChat = (rivet: typeof Rivet) => {
       return rivet.dedent`
         Model: ${data.useModelInput ? "(From Input)" : data.model || "Unset!"}
         Format: ${data.promptFormat || "Raw"}
+        Max tokens: ${data.numPredict || 1024}
       `;
     },
 
