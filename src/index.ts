@@ -1,6 +1,7 @@
 import type { RivetPlugin, RivetPluginInitializer } from "@ironclad/rivet-core";
 import { ollamaChat } from "./nodes/OllamaGenerateNode";
 import { ollamaChat2 } from "./nodes/OllamaChatNode";
+import { ollamaEmbed } from "./nodes/OllamaEmbeddingsNode";
 import { getOllamaModel } from "./nodes/GetOllamaModelNode";
 import { listOllamaModels } from "./nodes/ListOllamaModelsNode";
 import { pullModelToOllama } from "./nodes/PullModelToOllamaNode";
@@ -32,6 +33,7 @@ const plugin: RivetPluginInitializer = (rivet) => {
     register: (register) => {
       register(ollamaChat(rivet));
       register(ollamaChat2(rivet));
+      register(ollamaEmbed(rivet));
       register(getOllamaModel(rivet));
       register(listOllamaModels(rivet));
       register(pullModelToOllama(rivet));
