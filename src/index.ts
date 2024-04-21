@@ -1,7 +1,7 @@
 import type { RivetPlugin, RivetPluginInitializer } from "@ironclad/rivet-core";
 import { ollamaChat } from "./nodes/OllamaGenerateNode";
 import { ollamaChat2 } from "./nodes/OllamaChatNode";
-import { ollamaEmbed } from "./nodes/OllamaEmbeddingsNode";
+import { ollamaEmbed } from "./nodes/OllamaEmbeddingNode";
 import { getOllamaModel } from "./nodes/GetOllamaModelNode";
 import { listOllamaModels } from "./nodes/ListOllamaModelsNode";
 import { pullModelToOllama } from "./nodes/PullModelToOllamaNode";
