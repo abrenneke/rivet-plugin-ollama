@@ -137,56 +137,63 @@ export const ollamaEmbed = (rivet: typeof Rivet) => {
         "string[]",
       );
 
-      const prompt = docs[0];
+      const embeddings: number[][] = new Array(docs.length)
+        .fill(0)
+        .map(() => new Array(512).fill(0.0));
 
-      let apiResponse: Response;
+      for (let i = 0; docs.length - 1; i++) {
+        const prompt = docs[i];
+        let apiResponse: Response;
 
-      type RequestBodyType = {
-        model: string;
-        prompt: string;
-      };
+        type RequestBodyType = {
+          model: string;
+          prompt: string;
+        };
 
-      const requestBody: RequestBodyType = {
-        model,
-        prompt,
-      };
+        const requestBody: RequestBodyType = {
+          model,
+          prompt,
+        };
 
-      try {
-        apiResponse = await fetch(`${host}/api/embeddings`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(requestBody),
-        });
-      } catch (err) {
-        throw new Error(`Error from Ollama: ${rivet.getError(err).message}`);
-      }
-
-      if (!apiResponse.ok) {
         try {
-          const error = await apiResponse.json();
-          throw new Error(`Error from Ollama: ${error.message}`);
+          apiResponse = await fetch(`${host}/api/embeddings`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestBody),
+          });
         } catch (err) {
-          throw new Error(`Error from Ollama: ${apiResponse.statusText}`);
+          throw new Error(`Error from Ollama: ${rivet.getError(err).message}`);
         }
-      }
 
-      const reader = apiResponse.body?.getReader();
+        if (!apiResponse.ok) {
+          try {
+            const error = await apiResponse.json();
+            throw new Error(`Error from Ollama: ${error.message}`);
+          } catch (err) {
+            throw new Error(`Error from Ollama: ${apiResponse.statusText}`);
+          }
+        }
 
-      if (!reader) {
-        throw new Error("No response body!");
-      }
+        const reader = apiResponse.body?.getReader();
 
-      let finalResponse: OllamaEmmbeddingsResponse | undefined;
+        if (!reader) {
+          throw new Error("No response body!");
+        }
 
-      if (!finalResponse) {
-        throw new Error("No final response from Ollama!");
+        let finalResponse: OllamaEmmbeddingsResponse | undefined;
+
+        if (!finalResponse) {
+          throw new Error("No final response from Ollama!");
+        }
+
+        embeddings[i] = finalResponse.embedding;
       }
 
       outputs["embeddings" as PortId] = {
         type: "vector[]",
-        value: docsToEmbeddings(docs).embedding,
+        value: embeddings,
       };
 
       return outputs;
@@ -195,10 +202,3 @@ export const ollamaEmbed = (rivet: typeof Rivet) => {
 
   return rivet.pluginNodeDefinition(impl, "Ollama Embeddings");
 };
-
-function docsToEmbeddings(document: string): OllamaEmmbeddingsResponse[] {
-  const result: OllamaEmmbeddingsResponse = {
-    embedding: [1, 2, 3],
-  };
-  return [result, result];
-}
