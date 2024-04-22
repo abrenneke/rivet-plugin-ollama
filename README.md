@@ -12,6 +12,7 @@
 The Rivet Ollama Plugin is a plugin for [Rivet](https://rivet.ironcladapp.com) to allow you to use [Ollama](https://ollama.ai/) to run and chat with LLMs locally and easily. It adds the following nodes:
 
 - Ollama Chat
+- Ollama Embedding
 - Get Ollama Model
 - List Ollama Models
 - Pull Model to Ollama
@@ -27,6 +28,10 @@ The Rivet Ollama Plugin is a plugin for [Rivet](https://rivet.ironcladapp.com) t
   - [In the SDK](#in-the-sdk-1)
 - [Nodes](#nodes)
   - [Ollama Chat](#ollama-generate)
+    - [Inputs](#inputs)
+    - [Outputs](#outputs)
+    - [Editor Settings](#editor-settings)
+  - [Ollama Embedding](#ollama-embedding)
     - [Inputs](#inputs)
     - [Outputs](#outputs)
     - [Editor Settings](#editor-settings)
@@ -113,22 +118,23 @@ await createProcessor(project, {
 ## Nodes
 
 ### Ollama Chat
+
 The main node of the plugin. Functions similarly to the [Chat Node](https://rivet.ironcladapp.com/docs/node-reference/chat) built in to Rivet. Uses /api/chat route
 
 #### Inputs
 
-| Title         | Data Type        | Description                                         | Default Value | Notes                                                                                                                                                                                                                                           |
-| ------------- | ---------------- | --------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| System Prompt | `string`         | The system prompt to prepend to the messages list.  | (none)        | Optional.                                                                                                                                                                                                                                       |
+| Title         | Data Type        | Description                                         | Default Value | Notes                                                                                    |
+| ------------- | ---------------- | --------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------- |
+| System Prompt | `string`         | The system prompt to prepend to the messages list.  | (none)        | Optional.                                                                                |
 | Messages      | 'chat-message[]' | The chat messages to use as the prompt for the LLM. | (none)        | Chat messages are converted to the OpenAI message format using "role" and "content" keys |
 
 #### Outputs
 
-| Title                | Data Type        | Description                                                | Notes                                                       |
-| -------------------- | ---------------- | ---------------------------------------------------------- | ----------------------------------------------------------- |
-| Output               | `string`         | The response text from the LLM.                            |                                                             |
-| Messages Sent        | `chat-message[]` | The messages that were sent to Ollama.                     |                                                             |
-| All Messages         | `chat-message[]` | All messages, including the reply from the LLM.            |                                                             |
+| Title         | Data Type        | Description                                     | Notes |
+| ------------- | ---------------- | ----------------------------------------------- | ----- |
+| Output        | `string`         | The response text from the LLM.                 |       |
+| Messages Sent | `chat-message[]` | The messages that were sent to Ollama.          |       |
+| All Messages  | `chat-message[]` | All messages, including the reply from the LLM. |       |
 
 #### Editor Settings
 
@@ -136,7 +142,7 @@ The main node of the plugin. Functions similarly to the [Chat Node](https://rive
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ---------------- | --------------- |
 | Model                 | The name of the LLM model in to use in Ollama.                                                                                                                                                                                                          | (Empty)          | Yes              | `string`        |
 | Prompt Format         | The way to format chat messages for the prompt being sent to the ollama model. Raw means no formatting is applied. Llama 2 Instruct follows the [Llama 2 prompt format](https://gpus.llm-utils.org/llama-2-prompt-template/).                           | Llama 2 Instruct | No               | N/A             |
-| JSON Mode        | Activates JSON output mode | false | Yes               | `boolean`             |
+| JSON Mode             | Activates JSON output mode                                                                                                                                                                                                                              | false            | Yes              | `boolean`       |
 | Parameters Group      |                                                                                                                                                                                                                                                         |                  |                  |                 |
 | Mirostat              | Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0)                                                                                                                                         | (unset)          | Yes              | `number`        |
 | Mirostat Eta          | Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. (Default: 0.1)                        | (unset)          | Yes              | `number`        |
@@ -156,6 +162,26 @@ The main node of the plugin. Functions similarly to the [Chat Node](https://rive
 | Top P                 | Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text. (Default: 0.9)                                                                 | (unset)          | Yes              | `number`        |
 | Additional Parameters | Additional parameters to pass to Ollama. Numbers will be parsed and sent as numbers, otherwise they will be sent as strings. [See all supported parameters in Ollama](https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md)                  | (none)           | Yes              | `object`        |
 
+### Ollama Embedding
+
+Embedding models are models that are trained specifically to generate vector embeddings: long arrays of numbers that represent semantic meaning for a given sequence of text. The resulting vector embedding arrays can then be stored in a database, which will compare them as a way to search for data that is similar in meaning.
+
+#### Inputs
+
+See Editor Settings for all possible inputs.
+
+#### Outputs
+
+| Title     | Data Type | Description                                                                    | Notes |
+| --------- | --------- | ------------------------------------------------------------------------------ | ----- |
+| Embedding | `vector`  | Array of numbers that represent semantic meaning for a given sequence of text. |       |
+
+#### Editor Settings
+
+| Setting    | Description                   | Default Value | Use Input Toggle  | Input Data Type |
+| ---------- | ----------------------------- | ------------- | ----------------- | --------------- |
+| Model Name | The name of the model to get. | (Empty)       | Yes (default off) | `string`        |
+| Text       | The text to embed.            | (Empty)       | Yes (default off) | `string`        |
 
 ### Ollama Generate
 
@@ -195,7 +221,7 @@ Additional inputs available with toggles in the editor.
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ---------------- | --------------- |
 | Model                 | The name of the LLM model in to use in Ollama.                                                                                                                                                                                                          | (Empty)          | Yes              | `string`        |
 | Prompt Format         | The way to format chat messages for the prompt being sent to the ollama model. Raw means no formatting is applied. Llama 2 Instruct follows the [Llama 2 prompt format](https://gpus.llm-utils.org/llama-2-prompt-template/).                           | Llama 2 Instruct | No               | N/A             |
-| JSON Mode        | Activates JSON output mode | false | Yes               | `boolean`             |
+| JSON Mode             | Activates JSON output mode                                                                                                                                                                                                                              | false            | Yes              | `boolean`       |
 | Advanced Outputs      | Add additional outputs with detailed information about the Ollama execution.                                                                                                                                                                            | No               | No               | N/A             |
 | Parameters Group      |                                                                                                                                                                                                                                                         |                  |                  |                 |
 | Mirostat              | Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0)                                                                                                                                         | (unset)          | Yes              | `number`        |
