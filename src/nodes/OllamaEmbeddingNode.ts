@@ -37,10 +37,10 @@ export const ollamaEmbed = (rivet: typeof Rivet) => {
       const node: OllamaEmbeddingNode = {
         id: rivet.newId<NodeId>(),
         data: {
-          model: "mxbai-embed-large",
+          model: "",
           useModelInput: false,
           embedding: [],
-          text: "I thought what I'd do was, I'd pretend I was one of those deaf-mutes.",
+          text: "",
           useTextInput: false,
         },
         title: "Ollama Embedding",
