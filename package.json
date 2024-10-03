@@ -18,7 +18,8 @@
   },
   "dependencies": {
     "@ironclad/rivet-core": "^1.13.2",
-    "ts-pattern": "^5.0.5"
+    "ts-pattern": "^5.0.5",
+    "uint8array-extras": "^1.4.0"
   },
   "devDependencies": {
     "esbuild": "^0.19.2",

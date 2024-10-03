@@ -1,6 +1,7 @@
 import type {
   ChartNode,
   ChatMessage,
+  ChatMessageMessagePart,
   EditorDefinition,
   NodeId,
   NodeInputDefinition,
@@ -11,7 +12,7 @@ import type {
   PortId,
   Rivet,
 } from "@ironclad/rivet-core";
-import { match } from "ts-pattern";
+import { uint8ArrayToBase64 } from "uint8array-extras"; 
 
 export type OllamaChatNodeData = {
   model: string;
@@ -566,40 +567,55 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
         ? [{ type: "system", message: systemPrompt }, ...chatMessages]
         : chatMessages;
 
-        const inputMessages: InputMessage[] = allMessages.map(message => {
-          if (typeof message.message === 'string') {
-            return { type: message.type, message: message.message };
-          } else {
-            return { type: message.type, message: JSON.stringify(message.message) };
-          }
-        }); 
-      
-        let additionalParameters: Record<string, string | number> = (
-          data.additionalParameters ?? []
-        ).reduce((acc, { key, value }) => {
-          const parsedValue = Number(value);
-          acc[key] = isNaN(parsedValue) ? value : parsedValue;
-          return acc;
-        }, {} as Record<string, string | number>);
-  
-        if (data.useAdditionalParametersInput) {
-          additionalParameters = (rivet.coerceTypeOptional(
-            inputData["additionalParameters" as PortId],
-            "object"
-          ) ?? {}) as Record<string, string | number>;
-        }
+      let additionalParameters: Record<string, string | number> = (
+        data.additionalParameters ?? []
+      ).reduce((acc, { key, value }) => {
+        const parsedValue = Number(value);
+        acc[key] = isNaN(parsedValue) ? value : parsedValue;
+        return acc;
+      }, {} as Record<string, string | number>);
 
-        let stop: string[] | undefined = undefined;
-        if (data.useStopInput) {
-          stop = rivet.coerceTypeOptional(
-            inputData["stop" as PortId],
-            "string[]"
-          );
+      if (data.useAdditionalParametersInput) {
+        additionalParameters = (rivet.coerceTypeOptional(
+          inputData["additionalParameters" as PortId],
+          "object"
+        ) ?? {}) as Record<string, string | number>;
+      }
+
+      let stop: string[] | undefined = undefined;
+      if (data.useStopInput) {
+        stop = rivet.coerceTypeOptional(
+          inputData["stop" as PortId],
+          "string[]"
+        );
+      } else {
+        stop = data.stop ? [data.stop] : undefined;
+      }
+
+      const openAiMessages = allMessages.map(m => {
+        const role = m.type;
+        let content;
+        let images;
+        if (role === "user" && Array.isArray(m.message) && m.message.some(cm => typeof cm === "object" && cm.type === "image")) {
+            const parts: ChatMessageMessagePart[] = m.message as ChatMessageMessagePart[]; 
+            images = parts
+              .filter(p => typeof p === "object" && p.type === "image")
+              .map(img => uint8ArrayToBase64(img.data))
+            content = parts.filter(p => typeof p === "string").join("\n")
+        } else if (typeof m.message === "string") {
+            content = m.message 
         } else {
-          stop = data.stop ? [data.stop] : undefined;
+          content = JSON.stringify(m.message)
         }
-
-      const openAiMessages = formatChatMessages(inputMessages);
+        const omsg: OutputMessage = {
+          role: role,
+          content: content,
+        }
+        if (images) {
+          omsg['images'] = images
+        }
+        return omsg
+      })
 
       const parameters = {
         mirostat: rivet.getInputOrData(data, inputData, "mirostat", "number"),
@@ -685,7 +701,6 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
           },
           body: JSON.stringify(requestBody)
         });
-    
       } catch (err) {
         throw new Error(`Error from Ollama: ${rivet.getError(err).message}`);
       }
@@ -693,9 +708,9 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
       if (!apiResponse.ok) {
         try {
           const error = await apiResponse.json();
-          throw new Error(`Error from Ollama: ${error.message}`);
+          throw new Error(`Error from Ollama: ${error.message} - ${JSON.stringify(requestBody)}`);
         } catch (err) {
-          throw new Error(`Error from Ollama: ${apiResponse.statusText}`);
+          throw new Error(`Error from Ollama: ${apiResponse.statusText} - ${JSON.stringify(requestBody)}`);
         }
       }
 
@@ -774,6 +789,7 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
             type: "assistant",
             message: llmResponseText,
             function_call: undefined,
+            function_calls: undefined
           },
         ],
       };
@@ -785,19 +801,8 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
   return rivet.pluginNodeDefinition(impl, "Ollama Chat");
 };
 
-type InputMessage = {
-  type: string;
-  message: string;
-};
-
 type OutputMessage = {
   role: string;
   content: string;
-};
-
-function formatChatMessages(messages: InputMessage[]): OutputMessage[] {
-  return messages.map((message) => ({
-    role: message.type,
-    content: message.message,
-  }));
+  images?: string[];
 }

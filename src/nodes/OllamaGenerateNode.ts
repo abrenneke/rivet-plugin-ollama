@@ -867,6 +867,7 @@ export const ollamaChat = (rivet: typeof Rivet) => {
             type: "assistant",
             message: llmResponseText,
             function_call: undefined,
+            function_calls: undefined
           },
         ],
       };
