@@ -78,6 +78,9 @@ export type OllamaChatNodeData = {
 
   apiKey?: string;
   useApiKeyInput?: boolean;
+
+  headers?: { key: string; value: string }[];
+  useHeadersInput?: boolean;
 };
 
 export type OllamaChatNode = ChartNode<"ollamaChat2", OllamaChatNodeData>;
@@ -336,6 +339,15 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
         });
       }
 
+      if (data.useHeadersInput) {
+        inputs.push({
+          dataType: 'object',
+          id: 'headers' as PortId,
+          title: 'Headers',
+          description: 'Additional headers to send to the API.',
+        });
+      }
+
       return inputs;
     },
 
@@ -574,6 +586,16 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
               helperMessage:
                 "Optional API key for authentication with Ollama instances that require it. Will be sent as Authorization Bearer token.",
             },
+            {
+              type: "keyValuePair",
+              label: "Headers",
+              dataKey: "headers",
+              useInputToggleDataKey: "useHeadersInput",
+              keyPlaceholder: "Header Name",
+              valuePlaceholder: "Header Value",
+              helperMessage:
+                "Additional headers to send to the API.",
+            },
           ],
         },
       ];
@@ -761,6 +783,28 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
         if (apiKey && apiKey.trim()) {
           headers["Authorization"] = `Bearer ${apiKey}`;
         }
+
+        // Add headers from data or input
+        let additionalHeaders: Record<string, string> = {};
+        if (data.useHeadersInput) {
+          const headersInput = rivet.coerceTypeOptional(
+            inputData["headers" as PortId],
+            "object",
+          ) as Record<string, string> | undefined;
+          if (headersInput) {
+            additionalHeaders = headersInput;
+          }
+        } else if (data.headers) {
+          additionalHeaders = data.headers.reduce(
+            (acc, { key, value }) => {
+              acc[key] = value;
+              return acc;
+            },
+            {} as Record<string, string>,
+          );
+        }
+        
+        Object.assign(headers, additionalHeaders);
 
         apiResponse = await fetch(`${host}/api/chat`, {
           method: "POST",
