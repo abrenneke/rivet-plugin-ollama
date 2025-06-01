@@ -11,7 +11,6 @@ import type {
   PortId,
   Rivet,
 } from "@ironclad/rivet-core";
-import { match } from "ts-pattern";
 
 export type OllamaChatNodeData = {
   model: string;
@@ -76,6 +75,9 @@ export type OllamaChatNodeData = {
 
   host?: string;
   useHostInput?: boolean;
+
+  apiKey?: string;
+  useApiKeyInput?: boolean;
 };
 
 export type OllamaChatNode = ChartNode<"ollamaChat2", OllamaChatNodeData>;
@@ -307,11 +309,30 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
 
       if (data.useHostInput) {
         inputs.push({
-          dataType: 'string',
-          id: 'host' as PortId,
-          title: 'Host',
+          dataType: "string",
+          id: "host" as PortId,
+          title: "Host",
           description:
-            'The host to use for the Ollama API. You can use this to replace with any Ollama-compatible API. Leave blank for the default: http://localhost:11434',
+            "The host to use for the Ollama API. You can use this to replace with any Ollama-compatible API. Leave blank for the default: http://localhost:11434",
+        });
+      }
+
+      if (data.useApiKeyInput) {
+        inputs.push({
+          dataType: "string",
+          id: "apiKey" as PortId,
+          title: "API Key",
+          description:
+            "Optional API key for authentication with Ollama instances that require it.",
+        });
+      }
+
+      if (data.useAdditionalParametersInput) {
+        inputs.push({
+          id: "additionalParameters" as PortId,
+          dataType: "object",
+          title: "Additional Parameters",
+          description: "Additional parameters to pass to Ollama.",
         });
       }
 
@@ -357,7 +378,8 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
           type: "toggle",
           dataKey: "jsonMode",
           label: "JSON mode",
-          helperMessage: "Activates Ollamas JSON mode. Make sure to also instruct the model to return JSON"
+          helperMessage:
+            "Activates Ollamas JSON mode. Make sure to also instruct the model to return JSON",
         },
         {
           type: "number",
@@ -530,21 +552,30 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
               helperMessage:
                 "Additional parameters to pass to Ollama. Numbers will be parsed and sent as numbers, otherwise they will be sent as strings.",
             },
-      ]},
+          ],
+        },
         {
-          type: 'group',
-          label: 'Advanced',
+          type: "group",
+          label: "Advanced",
           editors: [
             {
-              type: 'string',
-              label: 'Host',
-              dataKey: 'host',
-              useInputToggleDataKey: 'useHostInput',
+              type: "string",
+              label: "Host",
+              dataKey: "host",
+              useInputToggleDataKey: "useHostInput",
               helperMessage:
-                'The host to use for the Ollama API. You can use this to replace with any Ollama-compatible API. Leave blank for the default: http://localhost:11434',
-            }
-          ]
-        }
+                "The host to use for the Ollama API. You can use this to replace with any Ollama-compatible API. Leave blank for the default: http://localhost:11434",
+            },
+            {
+              type: "string",
+              label: "API Key",
+              dataKey: "apiKey",
+              useInputToggleDataKey: "useApiKeyInput",
+              helperMessage:
+                "Optional API key for authentication with Ollama instances that require it. Will be sent as Authorization Bearer token.",
+            },
+          ],
+        },
       ];
     },
 
@@ -569,11 +600,22 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
       let outputs: Outputs = {};
 
       const hostInput = rivet.getInputOrData(data, inputData, "host", "string");
-      const host = hostInput || context.getPluginConfig("host") || "http://localhost:11434";
+      const host =
+        hostInput ||
+        context.getPluginConfig("host") ||
+        "http://localhost:11434";
 
       if (!host.trim()) {
         throw new Error("No host set!");
       }
+
+      const apiKeyInput = rivet.getInputOrData(
+        data,
+        inputData,
+        "apiKey",
+        "string",
+      );
+      const apiKey = apiKeyInput || context.getPluginConfig("apiKey");
 
       const model = rivet.getInputOrData(data, inputData, "model", "string");
       if (!model) {
@@ -582,50 +624,56 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
 
       const systemPrompt = rivet.coerceTypeOptional(
         inputData["system-prompt" as PortId],
-        "string"
+        "string",
       );
 
       const chatMessages =
         rivet.coerceTypeOptional(
           inputData["messages" as PortId],
-          "chat-message[]"
+          "chat-message[]",
         ) ?? [];
       const allMessages: ChatMessage[] = systemPrompt
         ? [{ type: "system", message: systemPrompt }, ...chatMessages]
         : chatMessages;
 
-        const inputMessages: InputMessage[] = allMessages.map(message => {
-          if (typeof message.message === 'string') {
-            return { type: message.type, message: message.message };
-          } else {
-            return { type: message.type, message: JSON.stringify(message.message) };
-          }
-        }); 
-      
-        let additionalParameters: Record<string, string | number> = (
-          data.additionalParameters ?? []
-        ).reduce((acc, { key, value }) => {
+      const inputMessages: InputMessage[] = allMessages.map((message) => {
+        if (typeof message.message === "string") {
+          return { type: message.type, message: message.message };
+        } else {
+          return {
+            type: message.type,
+            message: JSON.stringify(message.message),
+          };
+        }
+      });
+
+      let additionalParameters: Record<string, string | number> = (
+        data.additionalParameters ?? []
+      ).reduce(
+        (acc, { key, value }) => {
           const parsedValue = Number(value);
           acc[key] = isNaN(parsedValue) ? value : parsedValue;
           return acc;
-        }, {} as Record<string, string | number>);
-  
-        if (data.useAdditionalParametersInput) {
-          additionalParameters = (rivet.coerceTypeOptional(
-            inputData["additionalParameters" as PortId],
-            "object"
-          ) ?? {}) as Record<string, string | number>;
-        }
+        },
+        {} as Record<string, string | number>,
+      );
 
-        let stop: string[] | undefined = undefined;
-        if (data.useStopInput) {
-          stop = rivet.coerceTypeOptional(
-            inputData["stop" as PortId],
-            "string[]"
-          );
-        } else {
-          stop = data.stop ? [data.stop] : undefined;
-        }
+      if (data.useAdditionalParametersInput) {
+        additionalParameters = (rivet.coerceTypeOptional(
+          inputData["additionalParameters" as PortId],
+          "object",
+        ) ?? {}) as Record<string, string | number>;
+      }
+
+      let stop: string[] | undefined = undefined;
+      if (data.useStopInput) {
+        stop = rivet.coerceTypeOptional(
+          inputData["stop" as PortId],
+          "string[]",
+        );
+      } else {
+        stop = data.stop ? [data.stop] : undefined;
+      }
 
       const openAiMessages = formatChatMessages(inputMessages);
 
@@ -635,13 +683,13 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
           data,
           inputData,
           "mirostatEta",
-          "number"
+          "number",
         ),
         mirostat_tau: rivet.getInputOrData(
           data,
           inputData,
           "mirostatTau",
-          "number"
+          "number",
         ),
         num_ctx: rivet.getInputOrData(data, inputData, "numCtx", "number"),
         num_gqa: rivet.getInputOrData(data, inputData, "numGqa", "number"),
@@ -650,25 +698,25 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
           data,
           inputData,
           "numThread",
-          "number"
+          "number",
         ),
         repeat_last_n: rivet.getInputOrData(
           data,
           inputData,
           "repeatLastN",
-          "number"
+          "number",
         ),
         repeat_penalty: rivet.getInputOrData(
           data,
           inputData,
           "repeatPenalty",
-          "number"
+          "number",
         ),
         temperature: rivet.getInputOrData(
           data,
           inputData,
           "temperature",
-          "number"
+          "number",
         ),
         seed: rivet.getInputOrData(data, inputData, "seed", "number"),
         stop,
@@ -677,7 +725,7 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
           data,
           inputData,
           "numPredict",
-          "number"
+          "number",
         ),
         top_k: rivet.getInputOrData(data, inputData, "topK", "number"),
         top_p: rivet.getInputOrData(data, inputData, "topP", "number"),
@@ -685,7 +733,7 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
       };
 
       let apiResponse: Response;
-      
+
       type RequestBodyType = {
         model: string;
         messages: OutputMessage[];
@@ -698,22 +746,27 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
         model,
         messages: openAiMessages,
         stream: true,
-        options: parameters
+        options: parameters,
       };
-      
+
       if (data.jsonMode === true) {
         requestBody.format = "json";
       }
 
       try {
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+
+        if (apiKey && apiKey.trim()) {
+          headers["Authorization"] = `Bearer ${apiKey}`;
+        }
+
         apiResponse = await fetch(`${host}/api/chat`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(requestBody)
+          headers,
+          body: JSON.stringify(requestBody),
         });
-    
       } catch (err) {
         throw new Error(`Error from Ollama: ${rivet.getError(err).message}`);
       }
@@ -762,7 +815,9 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
 
               if (!json.done) {
                 if (llmResponseText === "") {
-                  llmResponseText += (json.message.content as string).trimStart();
+                  llmResponseText += (
+                    json.message.content as string
+                  ).trimStart();
                 } else {
                   llmResponseText += json.message.content;
                 }
@@ -771,7 +826,7 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
               }
             } catch (err) {
               throw new Error(
-                `Error parsing line from Ollama streaming response: ${line}`
+                `Error parsing line from Ollama streaming response: ${line}`,
               );
             }
           }
