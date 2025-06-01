@@ -73,6 +73,9 @@ export type OllamaChatNodeData = {
 
   additionalParameters?: { key: string; value: string }[];
   useAdditionalParametersInput?: boolean;
+
+  host?: string;
+  useHostInput?: boolean;
 };
 
 export type OllamaChatNode = ChartNode<"ollamaChat2", OllamaChatNodeData>;
@@ -302,6 +305,16 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
         });
       }
 
+      if (data.useHostInput) {
+        inputs.push({
+          dataType: 'string',
+          id: 'host' as PortId,
+          title: 'Host',
+          description:
+            'The host to use for the Ollama API. You can use this to replace with any Ollama-compatible API. Leave blank for the default: http://localhost:11434',
+        });
+      }
+
       return inputs;
     },
 
@@ -517,7 +530,21 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
               helperMessage:
                 "Additional parameters to pass to Ollama. Numbers will be parsed and sent as numbers, otherwise they will be sent as strings.",
             },
-      ]}
+      ]},
+        {
+          type: 'group',
+          label: 'Advanced',
+          editors: [
+            {
+              type: 'string',
+              label: 'Host',
+              dataKey: 'host',
+              useInputToggleDataKey: 'useHostInput',
+              helperMessage:
+                'The host to use for the Ollama API. You can use this to replace with any Ollama-compatible API. Leave blank for the default: http://localhost:11434',
+            }
+          ]
+        }
       ];
     },
 
@@ -541,7 +568,8 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
     async process(data, inputData, context) {
       let outputs: Outputs = {};
 
-      const host = context.getPluginConfig("host") || "http://localhost:11434";
+      const hostInput = rivet.getInputOrData(data, inputData, "host", "string");
+      const host = hostInput || context.getPluginConfig("host") || "http://localhost:11434";
 
       if (!host.trim()) {
         throw new Error("No host set!");
