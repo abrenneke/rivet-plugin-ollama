@@ -21,6 +21,15 @@ const plugin: RivetPluginInitializer = (rivet) => {
         helperText:
           "The host to use for the Ollama API. Defaults to http://localhost:11434.",
       },
+      apiKey: {
+        label: "API Key",
+        type: "secret",
+        default: "",
+        description:
+          "Optional API key for authentication with Ollama instances that require it.",
+        helperText:
+          "Leave empty if your Ollama instance doesn't require authentication.",
+      },
     },
 
     contextMenuGroups: [

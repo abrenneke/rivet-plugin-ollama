@@ -14,6 +14,15 @@ export type GetOllamaModelNode = ChartNode<
   {
     modelName: string;
     useModelNameInput?: boolean;
+
+    host?: string;
+    useHostInput?: boolean;
+
+    apiKey?: string;
+    useApiKeyInput?: boolean;
+
+    headers?: { key: string; value: string }[];
+    useHeadersInput?: boolean;
   }
 >;
 
@@ -45,6 +54,35 @@ export const getOllamaModel = (rivet: typeof Rivet) => {
           dataType: "string",
           title: "Model Name",
           description: "The name of the model to get.",
+        });
+      }
+
+      if (data.useHostInput) {
+        inputs.push({
+          dataType: "string",
+          id: "host" as PortId,
+          title: "Host",
+          description:
+            "The host to use for the Ollama API. You can use this to replace with any Ollama-compatible API. Leave blank for the default: http://localhost:11434",
+        });
+      }
+
+      if (data.useApiKeyInput) {
+        inputs.push({
+          dataType: "string",
+          id: "apiKey" as PortId,
+          title: "API Key",
+          description:
+            "Optional API key for authentication with Ollama instances that require it.",
+        });
+      }
+
+      if (data.useHeadersInput) {
+        inputs.push({
+          dataType: 'object',
+          id: 'headers' as PortId,
+          title: 'Headers',
+          description: 'Additional headers to send to the API.',
         });
       }
 
@@ -90,6 +128,38 @@ export const getOllamaModel = (rivet: typeof Rivet) => {
           helperMessage: "The name of the model to get.",
           placeholder: "Model Name",
         },
+        {
+          type: "group",
+          label: "Advanced",
+          editors: [
+            {
+              type: "string",
+              label: "Host",
+              dataKey: "host",
+              useInputToggleDataKey: "useHostInput",
+              helperMessage:
+                "The host to use for the Ollama API. You can use this to replace with any Ollama-compatible API. Leave blank for the default: http://localhost:11434",
+            },
+            {
+              type: "string",
+              label: "API Key",
+              dataKey: "apiKey",
+              useInputToggleDataKey: "useApiKeyInput",
+              helperMessage:
+                "Optional API key for authentication with Ollama instances that require it. Will be sent as Authorization Bearer token.",
+            },
+            {
+              type: "keyValuePair",
+              label: "Headers",
+              dataKey: "headers",
+              useInputToggleDataKey: "useHeadersInput",
+              keyPlaceholder: "Header Name",
+              valuePlaceholder: "Header Value",
+              helperMessage:
+                "Additional headers to send to the API.",
+            },
+          ],
+        },
       ];
     },
 
@@ -111,15 +181,59 @@ export const getOllamaModel = (rivet: typeof Rivet) => {
     },
 
     async process(data, inputData, context) {
-      const host = context.getPluginConfig("host") || "http://localhost:11434";
+      const hostInput = rivet.getInputOrData(data, inputData, "host", "string");
+      const host =
+        hostInput ||
+        context.getPluginConfig("host") ||
+        "http://localhost:11434";
+
+      if (!host.trim()) {
+        throw new Error("No host set!");
+      }
+
+      const apiKeyInput = rivet.getInputOrData(
+        data,
+        inputData,
+        "apiKey",
+        "string",
+      );
+      const apiKey = apiKeyInput || context.getPluginConfig("apiKey");
 
       const modelName = rivet.getInputOrData(data, inputData, "modelName");
 
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      if (apiKey && apiKey.trim()) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
+      }
+
+      // Add headers from data or input
+      let additionalHeaders: Record<string, string> = {};
+      if (data.useHeadersInput) {
+        const headersInput = rivet.coerceTypeOptional(
+          inputData["headers" as PortId],
+          "object",
+        ) as Record<string, string> | undefined;
+        if (headersInput) {
+          additionalHeaders = headersInput;
+        }
+      } else if (data.headers) {
+        additionalHeaders = data.headers.reduce(
+          (acc, { key, value }) => {
+            acc[key] = value;
+            return acc;
+          },
+          {} as Record<string, string>,
+        );
+      }
+      
+      Object.assign(headers, additionalHeaders);
+
       const response = await fetch(`${host}/api/show`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           name: modelName,
         }),
