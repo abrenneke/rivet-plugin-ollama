@@ -87,6 +87,9 @@ export type OllamaGenerateNodeData = {
 
   headers?: { key: string; value: string }[];
   useHeadersInput?: boolean;
+
+  think?: "" | "true" | "false";
+  useThinkInput?: boolean;
 };
 
 export type OllamaGenerateNode = ChartNode<"ollamaChat", OllamaGenerateNodeData>;
@@ -96,6 +99,7 @@ type OllamaStreamingContentResponse = {
   created_at: string;
   done: false;
   response: string;
+  thinking?: string;
 };
 
 type OllamaStreamingFinalResponse = {
@@ -112,6 +116,7 @@ type OllamaStreamingFinalResponse = {
   eval_count: number;
   eval_duration: number;
   context: number[];
+  thinking?: string;
 };
 
 type OllamaStreamingGenerateResponse =
@@ -132,6 +137,8 @@ export const ollamaChat = (rivet: typeof Rivet) => {
           numPredict: 1024,
           advancedOutputs: false,
           stop: "",
+          think: "",
+          useThinkInput: false,
         },
         title: "Ollama Generate",
         type: "ollamaChat",
@@ -353,6 +360,15 @@ export const ollamaChat = (rivet: typeof Rivet) => {
         });
       }
 
+      if (data.useThinkInput) {
+        inputs.push({
+          id: "think" as PortId,
+          dataType: "string",
+          title: "Think",
+          description: "Enable or disable thinking for models that support it.",
+        });
+      }
+
       return inputs;
     },
 
@@ -383,6 +399,13 @@ export const ollamaChat = (rivet: typeof Rivet) => {
           dataType: "chat-message[]",
           title: "All Messages",
           description: "All messages, including the reply from Ollama.",
+        },
+        {
+          id: "thinking" as PortId,
+          dataType: "string",
+          title: "Thinking",
+          description:
+            "The thinking process from Ollama (only available for models that support thinking).",
         },
       ];
 
@@ -692,6 +715,20 @@ export const ollamaChat = (rivet: typeof Rivet) => {
               helperMessage:
                 "Additional headers to send to the API.",
             },
+            {
+              type: "dropdown",
+              dataKey: "think",
+              useInputToggleDataKey: "useThinkInput",
+              label: "Thinking",
+              options: [
+                { value: "", label: "Unset" },
+                { value: "true", label: "Enable" },
+                { value: "false", label: "Disable" },
+              ],
+              defaultValue: "",
+              helperMessage:
+                "Enable or disable thinking for models that support it. When enabled, the model's thinking process will be available in the thinking output.",
+            },
           ],
         },
       ];
@@ -844,7 +881,21 @@ export const ollamaChat = (rivet: typeof Rivet) => {
         stream: boolean;
         options: any;
         format?: string;
+        think?: boolean;
       };
+
+      const thinkInput = rivet.getInputOrData(
+        data,
+        inputData,
+        "think",
+        "string",
+      );
+      const think =
+        thinkInput === "true"
+          ? true
+          : thinkInput === "false"
+            ? false
+            : undefined;
 
       const requestBody: RequestBodyType = {
         model,
@@ -855,7 +906,11 @@ export const ollamaChat = (rivet: typeof Rivet) => {
       };
       if (data.jsonMode === true) {
         requestBody.format = "json";
-      } // test
+      }
+
+      if (think !== undefined) {
+        requestBody.think = think;
+      }
       
       try {
         const headers: Record<string, string> = {
@@ -914,6 +969,7 @@ export const ollamaChat = (rivet: typeof Rivet) => {
 
       let streamingResponseText = "";
       let llmResponseText = "";
+      let thinkingText = "";
 
       let finalResponse: OllamaStreamingFinalResponse | undefined;
 
@@ -940,6 +996,11 @@ export const ollamaChat = (rivet: typeof Rivet) => {
               }
 
               if (!json.done) {
+                // Handle thinking content
+                if (json.thinking) {
+                  thinkingText += json.thinking;
+                }
+
                 if (llmResponseText === "") {
                   llmResponseText += (json.response as string).trimStart();
                 } else {
@@ -958,6 +1019,11 @@ export const ollamaChat = (rivet: typeof Rivet) => {
           outputs["output" as PortId] = {
             type: "string",
             value: llmResponseText,
+          };
+
+          outputs["thinking" as PortId] = {
+            type: "string",
+            value: thinkingText,
           };
 
           context.onPartialOutputs?.(outputs);
@@ -988,6 +1054,11 @@ export const ollamaChat = (rivet: typeof Rivet) => {
             function_call: undefined,
           },
         ],
+      };
+
+      outputs["thinking" as PortId] = {
+        type: "string",
+        value: thinkingText,
       };
 
       if (data.advancedOutputs) {
