@@ -81,6 +81,9 @@ export type OllamaChatNodeData = {
 
   headers?: { key: string; value: string }[];
   useHeadersInput?: boolean;
+
+  think?: "" | "true" | "false";
+  useThinkInput?: boolean;
 };
 
 export type OllamaChatNode = ChartNode<"ollamaChat2", OllamaChatNodeData>;
@@ -92,6 +95,7 @@ type OllamaStreamingContentResponse = {
   message: {
     role: string;
     content: string;
+    thinking?: string;
   };
 };
 
@@ -101,6 +105,7 @@ type OllamaStreamingFinalResponse = {
   message: {
     role: string;
     content: string;
+    thinking?: string;
   };
   done: true;
   total_duration: number;
@@ -127,6 +132,8 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
           jsonMode: false,
           advancedOutputs: false,
           stop: "",
+          think: "",
+          useThinkInput: false,
         },
         title: "Ollama Chat",
         type: "ollamaChat2",
@@ -341,10 +348,19 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
 
       if (data.useHeadersInput) {
         inputs.push({
-          dataType: 'object',
-          id: 'headers' as PortId,
-          title: 'Headers',
-          description: 'Additional headers to send to the API.',
+          dataType: "object",
+          id: "headers" as PortId,
+          title: "Headers",
+          description: "Additional headers to send to the API.",
+        });
+      }
+
+      if (data.useThinkInput) {
+        inputs.push({
+          id: "think" as PortId,
+          dataType: "string",
+          title: "Think",
+          description: "Enable or disable thinking for models that support it.",
         });
       }
 
@@ -358,6 +374,13 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
           dataType: "string",
           title: "Output",
           description: "The output from Ollama.",
+        },
+        {
+          id: "thinking" as PortId,
+          dataType: "string",
+          title: "Thinking",
+          description:
+            "The thinking process from Ollama (only available for models that support thinking).",
         },
         {
           id: "messages-sent" as PortId,
@@ -593,8 +616,21 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
               useInputToggleDataKey: "useHeadersInput",
               keyPlaceholder: "Header Name",
               valuePlaceholder: "Header Value",
+              helperMessage: "Additional headers to send to the API.",
+            },
+            {
+              type: "dropdown",
+              dataKey: "think",
+              useInputToggleDataKey: "useThinkInput",
+              label: "Thinking",
+              options: [
+                { value: "", label: "Unset" },
+                { value: "true", label: "Enable" },
+                { value: "false", label: "Disable" },
+              ],
+              defaultValue: "",
               helperMessage:
-                "Additional headers to send to the API.",
+                "Enable or disable thinking for models that support it. When enabled, the model's thinking process will be available in the thinking output.",
             },
           ],
         },
@@ -762,7 +798,21 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
         format?: string;
         options: any;
         stream: boolean;
+        think?: boolean;
       };
+
+      const thinkInput = rivet.getInputOrData(
+        data,
+        inputData,
+        "think",
+        "string",
+      );
+      const think =
+        thinkInput === "true"
+          ? true
+          : thinkInput === "false"
+            ? false
+            : undefined;
 
       const requestBody: RequestBodyType = {
         model,
@@ -770,6 +820,10 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
         stream: true,
         options: parameters,
       };
+
+      if (think !== undefined) {
+        requestBody.think = think;
+      }
 
       if (data.jsonMode === true) {
         requestBody.format = "json";
@@ -803,7 +857,7 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
             {} as Record<string, string>,
           );
         }
-        
+
         Object.assign(headers, additionalHeaders);
 
         apiResponse = await fetch(`${host}/api/chat`, {
@@ -832,6 +886,7 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
 
       let streamingResponseText = "";
       let llmResponseText = "";
+      let thinkingText = "";
 
       let finalResponse: OllamaStreamingFinalResponse | undefined;
 
@@ -858,12 +913,20 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
               }
 
               if (!json.done) {
-                if (llmResponseText === "") {
-                  llmResponseText += (
-                    json.message.content as string
-                  ).trimStart();
-                } else {
-                  llmResponseText += json.message.content;
+                // Handle thinking content
+                if (json.message.thinking) {
+                  thinkingText += json.message.thinking;
+                }
+
+                // Handle regular content
+                if (json.message.content) {
+                  if (llmResponseText === "") {
+                    llmResponseText += (
+                      json.message.content as string
+                    ).trimStart();
+                  } else {
+                    llmResponseText += json.message.content;
+                  }
                 }
               } else {
                 finalResponse = json;
@@ -878,6 +941,11 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
           outputs["output" as PortId] = {
             type: "string",
             value: llmResponseText,
+          };
+
+          outputs["thinking" as PortId] = {
+            type: "string",
+            value: thinkingText,
           };
 
           context.onPartialOutputs?.(outputs);
@@ -903,6 +971,11 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
             function_call: undefined,
           },
         ],
+      };
+
+      outputs["thinking" as PortId] = {
+        type: "string",
+        value: thinkingText,
       };
 
       return outputs;
