@@ -263,6 +263,15 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
         });
       }
 
+      if (data.useThinkInput) {
+        inputs.push({
+          id: "think" as PortId,
+          dataType: "string",
+          title: "Think",
+          description: "Enable or disable thinking for models that support it.",
+        });
+      }
+
       if (data.useSeedInput) {
         inputs.push({
           id: "seed" as PortId,
@@ -355,15 +364,6 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
         });
       }
 
-      if (data.useThinkInput) {
-        inputs.push({
-          id: "think" as PortId,
-          dataType: "string",
-          title: "Think",
-          description: "Enable or disable thinking for models that support it.",
-        });
-      }
-
       return inputs;
     },
 
@@ -434,6 +434,20 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
           helperMessage:
             "The temperature of the model. Increasing the temperature will make the model answer more creatively. (Default: 0.8)",
           allowEmpty: true,
+        },
+        {
+          type: "dropdown",
+          dataKey: "think",
+          useInputToggleDataKey: "useThinkInput",
+          label: "Thinking",
+          options: [
+            { value: "", label: "Unset" },
+            { value: "true", label: "Enable" },
+            { value: "false", label: "Disable" },
+          ],
+          defaultValue: "",
+          helperMessage:
+            "Enable or disable thinking for models that support it. When enabled, the model's thinking process will be available in the thinking output.",
         },
         {
           type: "group",
@@ -617,20 +631,6 @@ export const ollamaChat2 = (rivet: typeof Rivet) => {
               keyPlaceholder: "Header Name",
               valuePlaceholder: "Header Value",
               helperMessage: "Additional headers to send to the API.",
-            },
-            {
-              type: "dropdown",
-              dataKey: "think",
-              useInputToggleDataKey: "useThinkInput",
-              label: "Thinking",
-              options: [
-                { value: "", label: "Unset" },
-                { value: "true", label: "Enable" },
-                { value: "false", label: "Disable" },
-              ],
-              defaultValue: "",
-              helperMessage:
-                "Enable or disable thinking for models that support it. When enabled, the model's thinking process will be available in the thinking output.",
             },
           ],
         },
